@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كشف النقاط الرسمي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --main-font: 'Amiri', serif;
+            --headings-font: 'Cairo', sans-serif;
+            --paper-width: 210mm;
+            --border-color: #000;
+        }
+
+        body {
+            font-family: var(--main-font);
+            background-color: #f0f2f5;
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+            color: #000;
+        }
+
+        .search-box-container {
+            background: #fff; padding: 20px 30px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 30px;
+            text-align: center; border: 1px solid #ddd; max-width: 90%;
+        }
+        .search-input {
+            padding: 10px; font-size: 16px; border: 2px solid #ddd; border-radius: 6px;
+            font-family: var(--headings-font); text-align: center; margin-bottom: 15px;
+            width: 250px; display: block; margin: 0 auto 15px auto;
+        }
+        .btn {
+            padding: 10px 25px; font-size: 16px; color: white; border: none;
+            border-radius: 6px; cursor: pointer; font-family: var(--headings-font);
+            margin: 5px; transition: background-color 0.2s;
+        }
+        .search-btn { background-color: #1f4e79; }
+        .search-btn:hover { background-color: #153757; }
+        .print-btn { background-color: #27ae60; }
+        .print-btn:hover { background-color: #219653; }
+        #errorMessage { color: #d9534f; margin-top: 15px; font-weight: bold; }
+
+        /* ورقة الشهادة - حجم A4 كامل */
+        .certificate-paper {
+            width: 210mm;
+            min-height: 297mm;
+            background-color: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            position: relative;
+            padding: 1.5cm 1.8cm;
+            box-sizing: border-box;
+            border: 8px double #1f4e79;
+            outline: 2px solid #d4af37;
+            outline-offset: -12px;
+            margin: auto;
+            /* توزيع المحتوى عمودياً ليملأ الصفحة */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .watermark {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 60%; height: 50%; opacity: 0.07; z-index: 0;
+            background-position: center; background-repeat: no-repeat; background-size: contain;
+        }
+
+        .certificate-content {
+            position: relative;
+            z-index: 2;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* الترويسة */
+        .header-section { text-align: center; margin-bottom: 18px; }
+        .header-logos { height: 55px; background-position: center top; background-repeat: no-repeat; background-size: contain; margin-bottom: 6px; }
+        .header-text h2 { font-family: var(--headings-font); font-size: 1.05rem; margin: 3px 0; font-weight: 700; }
+        .main-title { font-family: var(--headings-font); color: #c00000; font-size: 2.4rem; margin: 12px 0 6px 0; font-weight: 800; }
+
+        .student-info { text-align: right; font-size: 1.05rem; line-height: 1.8; margin-bottom: 16px; }
+        .student-info strong { font-weight: 700; font-family: var(--headings-font); }
+        .highlight-text { padding: 0 5px; }
+
+        /* جدول النقاط */
+        .grades-table-container { margin: 12px 0; flex: 1; }
+        .grades-table { width: 100%; border-collapse: collapse; font-size: 1rem; border: 2px solid var(--border-color); }
+        .grades-table th, .grades-table td { border: 1px solid var(--border-color); padding: 7px 10px; text-align: center; vertical-align: middle; }
+        .grades-table thead th { background-color: #e7e9eb; font-family: var(--headings-font); font-weight: 700; border-bottom: 2px solid var(--border-color); font-size: 1.05rem; }
+        .grades-table tbody td:first-child { text-align: right; font-weight: 700; }
+        .grades-table tbody tr { height: 36px; }
+        .num-cell { font-family: 'Courier New', Courier, monospace; font-weight: 700; direction: ltr; font-size: 1.08rem; }
+        
+        .grades-table tfoot .total-row { background-color: #e7e9eb; font-weight: 700; border-top: 2px solid var(--border-color); height: 40px; }
+        .grades-table tfoot td.empty-cell { background-color: #fdfdfd; }
+
+        /* صندوق المعدل */
+        .footer-simple-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .final-average-box {
+            border: 3px solid var(--border-color);
+            padding: 14px 60px;
+            font-family: var(--headings-font);
+            font-weight: 700;
+            background: #fff;
+            white-space: nowrap;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+            font-size: 1.3rem;
+        }
+        .average-value { font-size: 1.8rem; color: #c00000; margin-right: 10px; }
+
+        /* إعدادات الطباعة - صفحة A4 واحدة بالضبط */
+        @media print {
+            body { background: #fff; padding: 0; margin: 0; }
+            .no-print, .search-box-container { display: none !important; }
+
+            @page { size: A4 portrait; margin: 0; }
+
+            .certificate-paper {
+                box-shadow: none !important;
+                border: 6px double #1f4e79 !important;
+                outline: 2px solid #d4af37 !important;
+                outline-offset: -10px !important;
+                margin: 0 !important;
+                width: 210mm !important;
+                min-height: unset !important;
+                height: 297mm !important;
+                padding: 0.6cm 1.2cm !important;
+                box-sizing: border-box !important;
+                page-break-inside: avoid !important;
+                overflow: hidden !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .main-title { font-size: 1.7rem !important; margin: 5px 0 3px 0 !important; }
+            .header-section { margin-bottom: 8px !important; }
+            .header-logos { height: 40px !important; }
+            .header-text h2 { font-size: 0.9rem !important; margin: 1px 0 !important; }
+
+            .student-info { font-size: 0.88rem !important; line-height: 1.55 !important; margin-bottom: 8px !important; }
+
+            .grades-table-container { margin: 6px 0 !important; }
+            .grades-table { font-size: 0.86rem !important; }
+            .grades-table th { font-size: 0.88rem !important; padding: 5px 7px !important; }
+            .grades-table tbody td { padding: 4px 7px !important; }
+            .grades-table tbody tr { height: 28px !important; }
+            .grades-table tfoot .total-row { height: 32px !important; }
+            .num-cell { font-size: 0.9rem !important; }
+
+            .certificate-content { display: block !important; }
+            .grades-table-container { flex: unset !important; }
+            .footer-simple-container { margin-top: 15px !important; margin-bottom: 0 !important; }
+            .final-average-box { padding: 8px 40px !important; font-size: 1rem !important; }
+            .average-value { font-size: 1.3rem !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-box-container no-print">
+        <h3 style="font-family: var(--headings-font); margin: 0 0 15px 0;">استخراج كشف النقاط</h3>
+        <input type="text" id="studentIdInput" class="search-input" placeholder="أدخل رقم التسجيل (مثال: 3501)">
+        <button onclick="generateCertificate()" class="btn search-btn">عرض الكشف</button>
+        <button onclick="window.print()" class="btn print-btn">طباعة الكشف</button>
+        <div id="errorMessage"></div>
+    </div>
+
+    <div id="certificateContainer" style="display: none;"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script>
+
+        // ============================================================
+        //  اسم ملف CSV — يجب أن يكون في نفس المجلد مع الـ HTML
+        // ============================================================
+        const CSV_FILE = 'students.csv';
+
+        let studentsData = [];
+        let subjectNames = []; // أسماء المواد الحقيقية من سطر ## في CSV
+
+        // تحميل CSV تلقائياً عند فتح الصفحة
+        window.addEventListener('DOMContentLoaded', function () {
+            const errorDiv = document.getElementById('errorMessage');
+
+            fetch(CSV_FILE)
+                .then(res => {
+                    if (!res.ok) throw new Error('لم يتم العثور على الملف');
+                    return res.arrayBuffer(); // نقرأ كـ bytes خام
+                })
+                .then(buffer => {
+                    // فك الترميز العربي Windows-1256 الذي ينتجه Excel
+                    const decoder = new TextDecoder('windows-1256');
+                    const text = decoder.decode(buffer);
+
+                    const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+
+                    let headerLine = '';
+                    let matiereCommentLine = '';
+                    let dataLines = [];
+
+                    lines.forEach((line, idx) => {
+                        if (idx === 0) headerLine = line;
+                        else if (line.startsWith('##')) matiereCommentLine = line;
+                        else dataLines.push(line);
+                    });
+
+                    // استخراج أسماء المواد من سطر ##
+                    // الصيغة: ##,اسم_المادة,,, اسم_المادة,,, ...
+                    if (matiereCommentLine) {
+                        const parts = matiereCommentLine.split(',');
+                        for (let i = 1; i < parts.length; i += 3) {
+                            const name = parts[i].trim();
+                            if (name) subjectNames.push(name);
+                        }
+                    }
+
+                    // تحليل بيانات التلاميذ
+                    const csvToParse = headerLine + '\n' + dataLines.join('\n');
+                    Papa.parse(csvToParse, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function (results) {
+                            studentsData = results.data.map(row => buildStudentObject(row));
+                            console.log('✅ تم تحميل ' + studentsData.length + ' تلميذ');
+                        },
+                        error: function (err) {
+                            errorDiv.textContent = 'خطأ في قراءة الملف: ' + err.message;
+                        }
+                    });
+                })
+                .catch(() => {
+                    errorDiv.textContent = '⚠️ تعذّر تحميل students.csv — تأكد من تشغيل Server محلي (python -m http.server 8000)';
+                });
+        });
+
+        // بناء كائن التلميذ من صف CSV
+        function buildStudentObject(row) {
+            const keys = Object.keys(row);
+
+            // 7 أعمدة ثابتة: id, session, branch, student_name, dob, pob, school
+            // ثم أعمدة المواد (كل مادة = 3 أعمدة: نقطة + معامل + مجموع)
+            // آخر عمودين: total_coeff, total_score
+            const fixedCount = 7;
+            const totalCoeff = parseFloat(row['total_coeff']) || 0;
+            const totalScore = parseFloat(row['total_score']) || 0;
+
+            const matCols = keys.slice(fixedCount, keys.length - 2);
+            const subjects = [];
+
+            for (let i = 0; i < matCols.length; i += 3) {
+                const sKey = matCols[i];
+                const cKey = matCols[i + 1];
+                const tKey = matCols[i + 2];
+                const subjectIndex = i / 3;
+                const subjectName = subjectNames[subjectIndex] || ('مادة ' + (subjectIndex + 1));
+
+                subjects.push({
+                    name:  subjectName,
+                    score: row[sKey] ? row[sKey].trim() : '',
+                    coeff: row[cKey] ? row[cKey].trim() : '',
+                    total: row[tKey] ? row[tKey].trim() : '',
+                });
+            }
+
+            return {
+                id:           (row['id']          || '').trim(),
+                session:      (row['session']      || '').trim(),
+                branch:       (row['branch']       || '').trim(),
+                student_name: (row['student_name'] || '').trim(),
+                dob:          (row['dob']          || '').trim(),
+                pob:          (row['pob']          || '').trim(),
+                school:       (row['school']       || '').trim(),
+                subjects:     subjects,
+                total_coeff:  totalCoeff,
+                total_score:  totalScore,
+            };
+        }
+
+        function generateCertificate() {
+            const idInput = document.getElementById('studentIdInput').value.trim();
+            const errorDiv = document.getElementById('errorMessage');
+            const container = document.getElementById('certificateContainer');
+            errorDiv.textContent = '';
+            container.style.display = 'none';
+
+            if (!idInput) { errorDiv.textContent = 'الرجاء إدخال رقم التسجيل.'; return; }
+            if (studentsData.length === 0) { errorDiv.textContent = '⏳ البيانات لم تُحمَّل بعد، انتظر لحظة ثم أعد المحاولة.'; return; }
+
+            const student = studentsData.find(s => s.id === idInput);
+            if (student) {
+                buildHtmlStructure(student);
+                container.style.display = 'block';
+            } else {
+                errorDiv.textContent = 'رقم التسجيل غير موجود في الملف.';
+            }
+        }
+
+        function createTableRow(subject, score, coeff, total) {
+            const s = (score !== undefined && score !== '') ? score : '--';
+            const c = (coeff !== undefined && coeff !== '') ? coeff : '--';
+            const t = (total !== undefined && total !== '') ? total : '--';
+            return `<tr>
+                <td>${subject}</td>
+                <td class="num-cell">${s}</td>
+                <td class="num-cell">${c}</td>
+                <td class="num-cell">${t}</td>
+            </tr>`;
+        }
+
+        function buildHtmlStructure(s) {
+            const container = document.getElementById('certificateContainer');
+
+            // حساب المعدل مباشرة من الأرقام الصحيحة
+            const totalScore = parseFloat(s.total_score) || 0;
+            const totalCoeff = parseFloat(s.total_coeff) || 1;
+            const calculatedAvg = (totalScore / totalCoeff).toFixed(2);
+
+            // بناء صفوف المواد
+            let rowsHtml = '';
+            s.subjects.forEach(sub => {
+                rowsHtml += createTableRow(sub.name, sub.score, sub.coeff, sub.total);
+            });
+
+            container.innerHTML = `
+                <div class="certificate-paper">
+                    <div class="watermark"></div>
+                    <div class="certificate-content">
+                        <header class="header-section">
+                            <div class="header-logos"></div>
+                            <div class="header-text">
+                                <h2>الجمهورية الجزائرية الديمقراطية الشعبية</h2>
+                                <h2>وزارة التربية الوطنية</h2>
+                            </div>
+                            <h1 class="main-title">كشــــف النقــــاط</h1>
+                        </header>
+
+                        <section class="student-info">
+                            <div class="row">
+                                <span style="margin-left: 30px;">امتحان شهادة البكالوريا التجريبية دورة : <strong class="highlight-text">${s.session}</strong>
+                                &nbsp;&nbsp;&nbsp; الشعبة : <strong class="highlight-text">${s.branch}</strong></span>
+                            </div>
+                            <div class="row" style="margin: 8px 0;">بناءً على محضر مجلس الأقسام فإن :</div>
+                            <div class="row">السيد (ة) : <strong class="highlight-text" style="font-size: 1.1rem;">${s.student_name}</strong></div>
+                            <div class="row">المؤسسة : <strong class="highlight-text">-ثانوية قاديري خالد - السوقر</strong></div>
+                            <div class="row" style="margin-top: 8px; font-weight: bold; color: ${calculatedAvg >= 10 ? '#006600' : '#cc0000'}">${calculatedAvg >= 10 ? "قد نجح (ت) بعد حصوله (ها) على النقاط التالية :" : "قد رسب (ت) وحصل (ت) على النقاط التالية :"}</div>
+                        </section>
+
+                        <div class="grades-table-container">
+                            <table class="grades-table">
+                                <thead>
+                                    <tr>
+                                        <th width="40%">المــــــــــادة</th>
+                                        <th width="20%">النقطة / 20</th>
+                                        <th width="20%">المعامل</th>
+                                        <th width="20%">المجموع</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rowsHtml}</tbody>
+                                <tfoot>
+                                    <tr class="total-row">
+                                        <td>المجمــــوع العـــــام</td>
+                                        <td class="empty-cell"></td>
+                                        <td class="num-cell">${s.total_coeff}</td>
+                                        <td class="num-cell">${s.total_score.toFixed(2)}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div class="footer-simple-container">
+                            <div class="final-average-box">
+                                المعدل العــام :
+                                <span class="num-cell average-value">${calculatedAvg}/20</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
