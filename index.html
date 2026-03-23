@@ -243,47 +243,46 @@
         });
 
         // بناء كائن التلميذ من صف CSV
-        function buildStudentObject(row) {
-            const keys = Object.keys(row);
+       function buildStudentObject(row) {
+    const keys = Object.keys(row);
+    const fixedCount = 7; // الأعمدة من البداية حتى المدرسة
+    
+    // البحث عن مكان total_coeff ديناميكياً لتجنب الإزاحة
+    let totalCoeffIndex = keys.findIndex(k => k.toLowerCase().includes('total_coeff'));
+    if (totalCoeffIndex === -1) totalCoeffIndex = keys.length - 3; 
 
-            // 7 أعمدة ثابتة: id, session, branch, student_name, dob, pob, school
-            // ثم أعمدة المواد (كل مادة = 3 أعمدة: نقطة + معامل + مجموع)
-            // آخر عمودين: total_coeff, total_score
-            const fixedCount = 7;
-            const totalCoeff = parseFloat(row['total_coeff']) || 0;
-            const totalScore = parseFloat(row['total_score']) || 0;
+    const totalCoeff = parseFloat(row[keys[totalCoeffIndex]]) || 0;
+    const totalScore = parseFloat(row[keys[totalCoeffIndex + 1]]) || 0;
 
-            const matCols = keys.slice(fixedCount, keys.length - 2);
-            const subjects = [];
+    // استخراج أعمدة المواد فقط بين المدرسة والمجموع
+    const matCols = keys.slice(fixedCount, totalCoeffIndex);
+    const subjects = [];
 
-            for (let i = 0; i < matCols.length; i += 3) {
-                const sKey = matCols[i];
-                const cKey = matCols[i + 1];
-                const tKey = matCols[i + 2];
-                const subjectIndex = i / 3;
-                const subjectName = subjectNames[subjectIndex] || ('مادة ' + (subjectIndex + 1));
+    for (let i = 0; i < matCols.length; i += 3) {
+        const subjectIndex = i / 3;
+        const subjectName = subjectNames[subjectIndex] || ('مادة ' + (subjectIndex + 1));
 
-                subjects.push({
-                    name:  subjectName,
-                    score: row[sKey] ? row[sKey].trim() : '',
-                    coeff: row[cKey] ? row[cKey].trim() : '',
-                    total: row[tKey] ? row[tKey].trim() : '',
-                });
-            }
+        subjects.push({
+            name:  subjectName,
+            score: row[matCols[i]] ? row[matCols[i]].trim() : '0.00',
+            coeff: row[matCols[i+1]] ? row[matCols[i+1]].trim() : '1',
+            total: row[matCols[i+2]] ? row[matCols[i+2]].trim() : '0.00',
+        });
+    }
 
-            return {
-                id:           (row['id']          || '').trim(),
-                session:      (row['session']      || '').trim(),
-                branch:       (row['branch']       || '').trim(),
-                student_name: (row['student_name'] || '').trim(),
-                dob:          (row['dob']          || '').trim(),
-                pob:          (row['pob']          || '').trim(),
-                school:       (row['school']       || '').trim(),
-                subjects:     subjects,
-                total_coeff:  totalCoeff,
-                total_score:  totalScore,
-            };
-        }
+    return {
+        id:           (row['id'] || '').trim(),
+        session:      (row['session'] || '').trim(),
+        branch:       (row['branch'] || '').trim(),
+        student_name: (row['student_name'] || '').trim(),
+        dob:          (row['dob'] || '').trim(),
+        pob:          (row['pob'] || '').trim(),
+        school:       (row['school'] || '').trim(),
+        subjects:     subjects,
+        total_coeff:  totalCoeff,
+        total_score:  totalScore,
+    };
+}
 
         function generateCertificate() {
             const idInput = document.getElementById('studentIdInput').value.trim();
