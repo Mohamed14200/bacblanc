@@ -191,7 +191,8 @@
         window.addEventListener('DOMContentLoaded', function () {
             const errorDiv = document.getElementById('errorMessage');
 
-            fetch(CSV_FILE)
+           // إضافة توقيت عشوائي لنهاية اسم الملف لإجبار المتصفح على تحميل النسخة الأحدث
+fetch(CSV_FILE + '?v=' + new Date().getTime())
                 .then(res => {
                     if (!res.ok) throw new Error('لم يتم العثور على الملف');
                     return res.arrayBuffer(); // نقرأ كـ bytes خام
